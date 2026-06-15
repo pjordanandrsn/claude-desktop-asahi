@@ -16,16 +16,16 @@
 }:
 let
   pname = "claude-desktop";
-  version = "1.11187.4";
+  version = "1.12603.1";
 
   srcs = {
     x86_64-linux = fetchurl {
-      url = "https://downloads.claude.ai/releases/win32/x64/1.11187.4/Claude-58400536f3ccde1cff9a129de6c3112dc8cb489a.exe";
-      hash = "sha256-GxYAmt3CgK0irX9aqQ9yV7+pmyxirSbe8qwMdrI0toc=";
+      url = "https://downloads.claude.ai/releases/win32/x64/1.12603.1/Claude-3df4fd263723119bc45f0af2d784afd5055e2ba9.exe";
+      hash = "sha256-Fym+uhmkDkkA8+32jk3B7BxFJ8TbM1sTOADJlkUMl6g=";
     };
     aarch64-linux = fetchurl {
-      url = "https://downloads.claude.ai/releases/win32/arm64/1.11187.4/Claude-58400536f3ccde1cff9a129de6c3112dc8cb489a.exe";
-      hash = "sha256-KnaOJjl35QKRiukTqg4c5In6VJQkM60LhCNWzOiTMC0=";
+      url = "https://downloads.claude.ai/releases/win32/arm64/1.12603.1/Claude-3df4fd263723119bc45f0af2d784afd5055e2ba9.exe";
+      hash = "sha256-jthQmwDvYBV89iR9xdrUccCQOTaEEgyfjxFoVIZEcKw=";
     };
   };
 
@@ -239,6 +239,7 @@ fi
 setup_logging || exit 1
 setup_electron_env
 cleanup_orphaned_cowork_daemon
+cleanup_stale_desktop_helpers
 cleanup_stale_lock
 cleanup_stale_cowork_socket
 
@@ -262,13 +263,20 @@ detect_display_backend
 # Build Electron arguments
 build_electron_args 'nix'
 
-# Add app path
-electron_args+=("$app_path")
+# Intentionally NOT appended: app.asar sits in Electron's default
+# resources/ dir next to the binary, so Electron auto-loads it. Passing
+# the path again makes Electron treat it as a file-to-open, which the
+# app forwards to its file-drop handler, producing a spurious
+# "Attach app.asar?" prompt on launch and on every taskbar reopen
+# (the second-instance argv path). Omitting it is the root-cause fix.
+# See issue #696.
+log_message "App (auto-loaded by Electron): $app_path"
 
-# Execute Electron (exec replaces the shell process so signals
-# like SIGINT, SIGTERM, and SIGHUP reach Electron directly)
+# Execute Electron and keep the launcher alive so explicit quit can
+# clean up Desktop-owned helpers that outlive the Electron main process.
 log_message "Executing: $electron_exec ''${electron_args[*]} $*"
-exec "$electron_exec" "''${electron_args[@]}" "$@" >> "$log_file" 2>&1
+run_electron_and_cleanup "$electron_exec" "''${electron_args[@]}" "$@"
+exit $?
 LAUNCHER
     # Substitute placeholders — electron_exec points to our custom
     # wrapper (which sets GTK/GIO env then execs our merged binary)
