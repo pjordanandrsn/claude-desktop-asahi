@@ -1,12 +1,17 @@
-> ## ⚡ Fast-cadence, auto-updating build (aarch64-first)
+> ## Personal rebuild for Fedora Asahi (aarch64)
 >
-> This is a **fast-rebuild fork** of [`aaddrick/claude-desktop-debian`](https://github.com/aaddrick/claude-desktop-debian), tuned for **Fedora Asahi (Apple Silicon / `aarch64`)**:
+> This is a personal fork of [`aaddrick/claude-desktop-debian`](https://github.com/aaddrick/claude-desktop-debian)
+> that rebuilds Claude Desktop for **Fedora Asahi (Apple Silicon / `aarch64`)**.
 >
-> - 🕐 **Rebuilt within ~1 hour** of every new Anthropic release (upstream's own check runs daily).
-> - 🤖 Ships a drop-in **`systemd` auto-updater** so your machine stays current hands-free → [`auto-update/`](auto-update/).
-> - 📦 Same `.rpm` / `.deb` / `.AppImage` artifacts — grab them from [Releases](../../releases).
+> **Status (2026-07): automated rebuilds are paused.** The upstream-sync workflow is
+> currently failing; the newest build here is **`claude1.8555` (2026-05-23)**, while
+> upstream has moved on. For current builds use
+> [upstream's releases](https://github.com/aaddrick/claude-desktop-debian/releases) —
+> the [`auto-update/`](auto-update/) systemd updater will simply hold at this fork's
+> last release until rebuilds resume.
 >
-> All credit for the build system goes to [@aaddrick](https://github.com/aaddrick) and contributors. The original documentation follows.
+> All credit for the build system goes to [@aaddrick](https://github.com/aaddrick) and
+> contributors. The original documentation follows.
 
 ---
 
