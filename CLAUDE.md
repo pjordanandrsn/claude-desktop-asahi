@@ -491,3 +491,17 @@ When upstream Claude Desktop updates, the `check-claude-version` workflow automa
     --jq '.content' | base64 -d | grep -E "claude_download_url="
   ```
   Update both amd64 and arm64 URLs in `detect_architecture()` to match main
+
+## Cursor Cloud specific instructions
+
+Notes for Cloud Agents running in the headless Ubuntu VM. Standard lint/test/build
+commands are unchanged — see [`Testing`](#testing) and the workflows under
+`.github/workflows/`. Dependency install is handled by the environment update
+script (mirrors [`.claude/hooks/install-build-tools.sh`](.claude/hooks/install-build-tools.sh)):
+`p7zip-full icoutils imagemagick bats shellcheck dpkg-dev libfuse2t64` via apt,
+plus `actionlint` from GitHub releases. Node 20+ is already present.
+
+- **Lint / test / build (headless):** `git grep -l '^#\( *shellcheck \|!\(/bin/\|/usr/bin/env \)\(sh\|bash\|dash\|ksh\)\)' -- '*.sh' | xargs shellcheck -x`, `bats tests/*.bats`, and `./build.sh --build appimage --clean no`. The build fetches the upstream Windows installer + Electron over the network (first run only; cached afterward).
+- **`appimagetool` needs FUSE, which the container lacks.** Run the AppImage build (and the produced AppImage) with `APPIMAGE_EXTRACT_AND_RUN=1`, e.g. `APPIMAGE_EXTRACT_AND_RUN=1 ./build.sh --build appimage --clean no`. Without it packaging dies with `fuse: failed to exec fusermount`.
+- **Launching the built AppImage GUI** requires `DISPLAY=:1` and a *valid* `DBUS_SESSION_BUS_ADDRESS`. The XFCE session exports an unparsable `autolaunch:` value; point Electron at the real session socket instead (find it with `pgrep -af 'dbus-daemon.*--session'` / the `/tmp/dbus-*` socket), e.g. `DISPLAY=:1 DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/dbus-XXXX APPIMAGE_EXTRACT_AND_RUN=1 ./claude-desktop-*.AppImage`. Otherwise dbus/tray registration fails.
+- **The chat UI cannot render from the Cloud VM.** The main window loads `claude.ai`, and Anthropic's edge returns HTTP 403 to cloud datacenter IPs (egress itself is unrestricted). The patched app still boots correctly — verify headlessly with `./claude-desktop-*.AppImage --doctor` and `scripts/verify-patches.sh <built app.asar>` instead of expecting the web UI. The `chrome-sandbox` doctor FAIL is expected because AppImage mode launches Electron with `--no-sandbox`.
